@@ -26,12 +26,20 @@ export default function CreateReservation() {
     const errors = [];
     const today = new Date();
     const reservationDate = new Date(formData.reservation_date);
+    const reservationTime = formData.reservation_time;
 
-    if (reservationDate.getDay() === 2) {
+    if (reservationDate.getDay() === 1) {
       errors.push({ message: "We are closed on Tuesdays" });
     }
     if (reservationDate < today) {
       errors.push({ message: "Reservations cannot be made in the past" });
+    }
+    if (reservationTime.localeCompare("10:30") === -1) {
+      errors.push({ message: "We are closed before 10:30AM"});      
+    } else if(reservationTime.localeCompare("21:30") === 1) {
+      errors.push({ message: "We are closed after 9:30PM" });
+    } else if(reservationTime.localeCompare("21:00") === 1 ) {
+      errors.push({ message: "You must book at least 30 minutes before store closes" });
     }
     setErrors(errors);
     if (errors.length > 0) {
@@ -42,7 +50,7 @@ export default function CreateReservation() {
 
   const displayErrors = () => {
     return errors.map((error) => {
-      return <ErrorAlert error={error} />
+      return <ErrorAlert error={error} />;
     });
   };
 
@@ -51,18 +59,21 @@ export default function CreateReservation() {
     if (dateValidation()) {
       history.push(`/dashboard?date=${formData.reservation_date}`);
     }
+    
   };
 
   return (
     <div>
-      <form>
+      <form onSubmit={handleSubmit}>
         <label>
           First Name:
           <input
+          className=""
             type="text"
             name="first_name"
             value={formData.first_name}
             onChange={handleChange}
+            required
           />
         </label>
         <label>
@@ -78,6 +89,7 @@ export default function CreateReservation() {
         <label>
           Mobile Number:
           <input
+          required
             type="tel"
             name="mobile_number"
             value={formData.mobile_number}
@@ -101,6 +113,7 @@ export default function CreateReservation() {
             name="reservation_time"
             value={formData.reservation_time}
             onChange={handleChange}
+            required
           />
         </label>
         <label>
@@ -110,9 +123,10 @@ export default function CreateReservation() {
             name="people"
             value={formData.people}
             onChange={handleChange}
+            required
           />
         </label>
-        <button type="submit" onClick={handleSubmit} name="submit">
+        <button type="submit" name="submit">
           Submit
         </button>
         <button type="button" onClick={() => history.goBack()} name="cancel">

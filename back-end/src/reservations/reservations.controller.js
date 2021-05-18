@@ -105,21 +105,40 @@ function dateIsValid(req,res,next) {
   const { reservation_date } = req.body.data;
   const reservation = new Date(reservation_date);
   const today = new Date();
-  console.log("getDay",reservation.getDay());
 
   if (reservation < today) {
-    console.log("should catch past res error")
     return next({
       status: 400,
       message: "Reservation must be in the future"
     })
   }
   if (reservation.getDay() === 1) {
-    console.log("should catch tuesday error")
     return next({
       status: 400,
       message: "we are closed on Tuesdays"
     })
+  }
+  next();
+}
+
+function timeIsValid(req, res, next) {
+  const { reservation_time } =  req.body.data;
+  
+  if (reservation_time.localeCompare("10:30") === -1) {
+    next({
+      status: 400,
+      message: "Store closed before 10:30AM"
+    });      
+  } else if(reservation_time.localeCompare("21:30") === 1) {
+    next({
+      status: 400,
+      message: "Store closed after 09:30PM"
+    });
+  } else if(reservation_time.localeCompare("21:00") === 1 ) {
+    next({
+      status: 400,
+      message: "You must book at least 30 minutes before store closes"
+    });
   }
   next();
 }
@@ -139,5 +158,5 @@ async function create(req, res, next) {
 }
 module.exports = {
   list,
-  create: [hasValidProperties, dateIsValid, create],
+  create: [hasValidProperties, dateIsValid, timeIsValid, create],
 };
