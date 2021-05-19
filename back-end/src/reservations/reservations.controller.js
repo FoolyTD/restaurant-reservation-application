@@ -3,6 +3,12 @@
  */
 const service = require("./reservations.service");
 
+async function reservationExists(req,res,next) {
+  const { reservation_id } = req.params;
+
+  res.json()
+}
+
 function hasValidProperties(req, res, next) {
   const { data = {} } = req.body;
 
