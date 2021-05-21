@@ -6,6 +6,11 @@ function list(reservation_date) {
     .select("*");
 }
 
+function listAll() {
+    return knex("reservations")
+    .select("*");
+}
+
 function create(reservation) {
     return knex("reservations")
     .insert(reservation)
@@ -14,12 +19,14 @@ function create(reservation) {
 
 function read(reservation_id) {
     return knex("reservations")
+    .select("*")
     .where({reservation_id})
-    .select("*");
+    .first();
 }
 
 module.exports = {
     list,
     create,
-    read
+    read, 
+    listAll,
 }
