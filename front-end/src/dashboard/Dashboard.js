@@ -3,7 +3,7 @@ import { listReservations } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import { previous, today, next } from "../utils/date-time";
 import { useHistory, Link } from "react-router-dom";
-import { listTables } from "../utils/apiCalls";
+import { listTables, freeTable } from "../utils/apiCalls";
 
 /**
  * Defines the dashboard page.
@@ -24,6 +24,7 @@ function Dashboard({ date }) {
   function loadDashboard() {
     const abortController = new AbortController();
     setReservationsError(null);
+    setTablesError(null);
     listReservations({ date }, abortController.signal)
       .then(setReservations)
       .catch(setReservationsError);
@@ -50,6 +51,16 @@ function Dashboard({ date }) {
       );
     });
   };
+  // Handle when the finish button it clicked
+  const handleClick = (table_id) => {
+    const confirmation = window.confirm("Is this table ready to seat new guests? This cannot be undone.")
+    if (confirmation) {
+      // Delete the reservation ID to free up the table
+      freeTable(table_id)
+      .then(loadDashboard)
+      .catch(setTablesError)
+    }
+  }
 
   const showTables = () => {
     return tables.map((table) => {
@@ -59,6 +70,7 @@ function Dashboard({ date }) {
             <h4>Table Name: {table.table_name}</h4>
             <p>Capacity: {table.capacity}</p>
             <p data-table-id-status={table.table_id}>Status: {table.reservation_id ? "Occupied" : "Free"}</p>
+            {table.reservation_id && <button data-table-id-finish={table.table_id} onClick={()=>handleClick(table.table_id)} type="button">Finish</button>}
           </li>
         </div>
       );
@@ -76,7 +88,7 @@ function Dashboard({ date }) {
         </section>
       
       <div>
-        <ul>
+        <ul className="">
          {showTables()} 
         </ul> 
       </div>
