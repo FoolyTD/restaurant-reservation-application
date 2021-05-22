@@ -10,6 +10,31 @@ const reservationsService = require("../reservations/reservations.service");
 // Consider putting the res.locals to pass data through middleware
 // if reservation status is booked
 
+async function tableExists(req,res,next) {
+  const table = await service.read(req.params.table_id);
+
+  if(table === undefined) {
+    return next({
+      status: 404,
+      message: `table ${req.params.table_id} does not exist`
+    })
+  }
+  res.locals.table = table;
+  return next();
+}
+
+function tableHasReservationId(req,res,next) {
+  const table = res.locals.table;
+
+  if (table.reservation_id) {
+    return next()
+  } 
+  return next({
+    status: 400,
+    message: "This table is not occupied"
+  })
+}
+
 async function tableCanBeUpdated(req, res, next) {
   const reservations = await reservationsService.listAll();
   
@@ -149,7 +174,15 @@ async function read(req,res,next) {
       message: `${req.params.table_id} does not exist`
     })
   }
-  res.json({data})
+  res.locals.data = data;
+  res.json({data});
+}
+
+async function destroy(req, res) {
+  const { table } = res.locals;
+  
+  await service.removeReservation(table.table_id);
+  res.send({}).status(200);
 }
 
 module.exports = {
@@ -158,4 +191,5 @@ module.exports = {
   update: [tableCanBeUpdated, update], 
   tableCanBeUpdated,
   read,
+  delete: [tableExists, tableHasReservationId, destroy] 
 };

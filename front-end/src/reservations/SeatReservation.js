@@ -14,7 +14,7 @@ export default function SeatReservation({tables, loadTables, tableId, setTableId
   const history = useHistory();
 
   useEffect(loadData, [reservationId, tableId]);
-  useEffect(loadTable, [tableId]);
+  useEffect(loadTable, [tableId, tables]);
 
   function loadData() {
     const abortController = new AbortController();

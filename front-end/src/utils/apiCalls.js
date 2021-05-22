@@ -101,11 +101,20 @@ async function listTable(table_id, signal) {
   return await fetchJson(url, { headers, signal }, []);
 }
 
+async function freeTable(table_id) {
+  const url = `${API_BASE_URL}/tables/${table_id}/seat`;
+  const options = {
+    method: "DELETE",
+  };
+  return await fetchJson(url, options);
+} 
+
 module.exports = {
   createReservation,
   createTable,
   seatReservation,
   listTables,
   listReservation,
-  listTable
+  listTable,
+  freeTable,
 };
