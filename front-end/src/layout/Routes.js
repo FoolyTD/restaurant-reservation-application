@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import CreateReservation from "../reservations/CreateReservation";
 import CreateTable from "../tables/createTable";
 import { Redirect, Route, Switch } from "react-router-dom";
@@ -7,6 +7,7 @@ import NotFound from "./NotFound";
 import { today } from "../utils/date-time";
 import useQuery from "../utils/useQuery";
 import SeatReservation from "../reservations/SeatReservation";
+import { listTables } from "../utils/apiCalls";
 
 /**
  * Defines all the routes for the application.
@@ -16,6 +17,18 @@ import SeatReservation from "../reservations/SeatReservation";
  * @returns {JSX.Element}
  */
 function Routes() {
+  const [tables, setTables] = useState([]);
+  useEffect(loadTables, [])
+
+  function loadTables() {
+    const abortController = new AbortController();
+
+    listTables()
+    .then(setTables)
+    .catch();
+    return () => abortController.abort();
+  }
+
   const query = useQuery();
 	const date = query.get("date");
   return (
@@ -27,7 +40,7 @@ function Routes() {
         <Redirect to={"/dashboard"} />
       </Route>
       <Route exact={true} path="/reservations/:reservationId/seat">
-        <SeatReservation />
+        <SeatReservation tables={tables} loadTables={loadTables} />
       </Route>
       <Route exact={true} path="/reservations/new">
         <CreateReservation />

@@ -43,8 +43,8 @@ export default function CreateTable() {
   };
 
   const displayErrors = () => {
-    return errors.map((error) => {
-      return <ErrorAlert error={error} />;
+    return errors.map((error, index) => {
+      return <ErrorAlert key={`error-${index}`} error={error} />;
     });
   };
   return (

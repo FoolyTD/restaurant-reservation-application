@@ -1,27 +1,26 @@
 import { useParams, useHistory } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { listReservation, listTables, seatReservation, listTable } from "../utils/apiCalls";
+import { listReservation, listTables, seatReservation } from "../utils/apiCalls";
 // THERE IS AN API CALL THAT WILL SEAT YOUR RESERVATION
 
-export default function SeatReservation() {
-  const [tables, setTables] = useState([]);
-  const [tablesError, setTablesError] = useState(null);
-  const [table, setTable] = useState([]);
-  const [tableId, setTableId] = useState([]);
-  const [tableError, setTableError] = useState(null);
+export default function SeatReservation({tables, loadTables}) {
+  //const [tables, setTables] = useState([]);
+  //const [tablesError, setTablesError] = useState(null);
+  const [table, setTable] = useState(null);
+  const [tableId, setTableId] = useState(null);
   const [reservation, setReservation] = useState([]);
   const [reservationError, setReservationError] = useState(null);
   const { reservationId } = useParams();
   const history = useHistory();
 
-  useEffect(loadData, []);
-  //useEffect(loadTable, []);
+  useEffect(loadData, [reservationId, tableId]);
+  useEffect(loadTable, [tableId]);
 
   function loadData() {
     const abortController = new AbortController();
-    setTablesError(null);
+   // setTablesError(null);
     setReservationError(null);
-    listTables().then(setTables).catch(setTablesError);
+   // listTables().then(setTables).catch(setTablesError);
     listReservation(reservationId).then(setReservation)
     .catch(setReservationError);
     return () => abortController.abort();
@@ -29,18 +28,27 @@ export default function SeatReservation() {
 
   // Don't need API call to set table, just filter through tables and find mathing table_id 
   //  for the select option table id
+  function loadTable() {
+    const foundTable = tables.find((table)=>table.table_id === Number(tableId));
+    setTable(foundTable);
+  }
 
   const seatingValidation = () => {
     const errors = [];
-    const currentTable = table[0];
-    console.log(currentTable);
-    // if(reservation.people > currentTable.capacity) {
-    //   errors.push({message: "Party size exceeds table capacity"})
-    // }
-    // if(errors.length > 0) {
-    //   return false;
-    // }
-    return false;
+    if(!table || table.length === 0) {
+      return false;
+    }
+    if (table.reservation_id) {
+      errors.push({message: "Table already occupied"});
+    }
+    if(table.capacity < reservation.people) {
+      errors.push({message: "table not big enough"});
+    }
+    if (errors.length > 0) {
+     // setTablesError(errors);
+      return false;
+    }
+    return true;
   }
 
   const listTableOptions = () => {
@@ -53,28 +61,32 @@ export default function SeatReservation() {
     });
   };
 
-  const handleChange = ({target:{value}}) => {
-    setTableId(value);
+  const handleChange = async ({target:{value}}) => {
+    setTableId((currentValue)=> currentValue = value);
   }
 
   const handleSubmit = (event) => {
+    const abortController = new AbortController();
     event.preventDefault();
+
     if(seatingValidation()) {
-      seatReservation(reservationId, tableId)
+    seatReservation(reservationId, tableId)
+   // .then(window.setTimeout(window.alert, 2*1000, 'That was really slow!'))
+   .then(loadTables())
     .then(history.push(`/dashboard`))
-    .catch()
+    .catch(console.log(""))
+    return () => abortController.abort();
     }  
   };
 
   return (
     <div>
-      {tablesError && tablesError.map((error) => <h1>{error}</h1>)}
       <h1>Seat Reservation {reservationId}</h1>
       <form onSubmit={handleSubmit}>
         <label>
           Table Number:
-          <select onChange={handleChange} name="table_id">
-            {/* <option key={0} value="">--Select Table--</option> */}
+          <select onChange={handleChange} name="table_id" required>
+            <option key={0} value={null}>--Select Table--</option>
             {listTableOptions()}
           </select>
         </label>
