@@ -18,14 +18,17 @@ import { listTables } from "../utils/apiCalls";
  */
 function Routes() {
   const [tables, setTables] = useState([]);
-  useEffect(loadTables, [])
+  const [tablesError, setTablesError] = useState(null);
+  const [tableId, setTableId] = useState(null);
+  
+  useEffect(loadTables, [tableId])
 
   function loadTables() {
     const abortController = new AbortController();
 
     listTables()
     .then(setTables)
-    .catch();
+    .catch(setTablesError);
     return () => abortController.abort();
   }
 
@@ -40,7 +43,11 @@ function Routes() {
         <Redirect to={"/dashboard"} />
       </Route>
       <Route exact={true} path="/reservations/:reservationId/seat">
-        <SeatReservation tables={tables} loadTables={loadTables} />
+        <SeatReservation 
+        tables={tables} 
+        loadTables={loadTables}
+        tableId={tableId}
+        setTableId={setTableId} />
       </Route>
       <Route exact={true} path="/reservations/new">
         <CreateReservation />

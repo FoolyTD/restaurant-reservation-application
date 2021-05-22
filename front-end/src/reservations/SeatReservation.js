@@ -1,13 +1,13 @@
 import { useParams, useHistory } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { listReservation, listTables, seatReservation } from "../utils/apiCalls";
+import { listReservation, seatReservation } from "../utils/apiCalls";
 // THERE IS AN API CALL THAT WILL SEAT YOUR RESERVATION
 
-export default function SeatReservation({tables, loadTables}) {
+export default function SeatReservation({tables, loadTables, tableId, setTableId}) {
   //const [tables, setTables] = useState([]);
   //const [tablesError, setTablesError] = useState(null);
   const [table, setTable] = useState(null);
-  const [tableId, setTableId] = useState(null);
+  //const [tableId, setTableId] = useState(null);
   const [reservation, setReservation] = useState([]);
   const [reservationError, setReservationError] = useState(null);
   const { reservationId } = useParams();
@@ -18,9 +18,7 @@ export default function SeatReservation({tables, loadTables}) {
 
   function loadData() {
     const abortController = new AbortController();
-   // setTablesError(null);
     setReservationError(null);
-   // listTables().then(setTables).catch(setTablesError);
     listReservation(reservationId).then(setReservation)
     .catch(setReservationError);
     return () => abortController.abort();
@@ -45,7 +43,6 @@ export default function SeatReservation({tables, loadTables}) {
       errors.push({message: "table not big enough"});
     }
     if (errors.length > 0) {
-     // setTablesError(errors);
       return false;
     }
     return true;
@@ -71,8 +68,9 @@ export default function SeatReservation({tables, loadTables}) {
 
     if(seatingValidation()) {
     seatReservation(reservationId, tableId)
-   // .then(window.setTimeout(window.alert, 2*1000, 'That was really slow!'))
-   .then(loadTables())
+    .then(loadTables())
+    .then(loadTables())
+    .then(loadTables())
     .then(history.push(`/dashboard`))
     .catch(console.log(""))
     return () => abortController.abort();
