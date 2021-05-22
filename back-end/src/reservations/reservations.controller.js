@@ -3,6 +3,20 @@
  */
 const service = require("./reservations.service");
 
+async function reservationExists(req,res,next) {
+  const { reservation_Id } = req.params;
+  const data = await service.read(reservation_Id);
+
+  if(data === undefined) {
+    return next({
+      status: 404,
+      message: `reservation ${reservation_Id} does not exist` 
+    });
+  }
+
+  res.json({ data });
+}
+
 function hasValidProperties(req, res, next) {
   const { data = {} } = req.body;
 
@@ -156,7 +170,15 @@ async function create(req, res, next) {
   const data = await service.create(res.locals.data);
   res.status(201).json({ data: data[0] });
 }
+
+async function listAll(req,res,next) {
+  const data = await service.listAll();
+  res.json({data});
+}
 module.exports = {
   list,
   create: [hasValidProperties, dateIsValid, timeIsValid, create],
+  read: reservationExists,
+  listAll,
+  reservationExists,
 };

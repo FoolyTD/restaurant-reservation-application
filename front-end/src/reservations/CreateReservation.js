@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
 import ErrorAlert from "../layout/ErrorAlert";
-
+//Importing the api.js function that will add the reservation to our database
+import { createReservation } from "../utils/apiCalls";
 export default function CreateReservation() {
   const [errors, setErrors] = useState(null);
   const initialForm = {
@@ -14,11 +15,14 @@ export default function CreateReservation() {
   };
   const [formData, setFormData] = useState({ ...initialForm });
   const history = useHistory();
-
+  
   const handleChange = ({ target }) => {
+  // API call was not working because the party size was being passed in as a string
+  //  I convert the string into a number
+    const value = target.name === 'people' ? Number(target.value) : target.value;
     setFormData({
       ...formData,
-      [target.name]: target.value,
+      [target.name]: value,
     });
   };
 
@@ -35,11 +39,13 @@ export default function CreateReservation() {
       errors.push({ message: "Reservations cannot be made in the past" });
     }
     if (reservationTime.localeCompare("10:30") === -1) {
-      errors.push({ message: "We are closed before 10:30AM"});      
-    } else if(reservationTime.localeCompare("21:30") === 1) {
+      errors.push({ message: "We are closed before 10:30AM" });
+    } else if (reservationTime.localeCompare("21:30") === 1) {
       errors.push({ message: "We are closed after 9:30PM" });
-    } else if(reservationTime.localeCompare("21:00") === 1 ) {
-      errors.push({ message: "You must book at least 30 minutes before store closes" });
+    } else if (reservationTime.localeCompare("21:00") === 1) {
+      errors.push({
+        message: "You must book at least 30 minutes before store closes",
+      });
     }
     setErrors(errors);
     if (errors.length > 0) {
@@ -49,17 +55,18 @@ export default function CreateReservation() {
   };
 
   const displayErrors = () => {
-    return errors.map((error) => {
-      return <ErrorAlert error={error} />;
+    return errors.map((error, index) => {
+      return <ErrorAlert key={`error-${index}`} error={error} />;
     });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (dateValidation()) {
+      //On submit we want to create the reservation
+      createReservation(formData);
       history.push(`/dashboard?date=${formData.reservation_date}`);
     }
-    
   };
 
   return (
@@ -68,7 +75,7 @@ export default function CreateReservation() {
         <label>
           First Name:
           <input
-          className=""
+            className=""
             type="text"
             name="first_name"
             value={formData.first_name}
@@ -89,7 +96,7 @@ export default function CreateReservation() {
         <label>
           Mobile Number:
           <input
-          required
+            required
             type="tel"
             name="mobile_number"
             value={formData.mobile_number}
