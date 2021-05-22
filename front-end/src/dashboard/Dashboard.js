@@ -82,6 +82,7 @@ function Dashboard({ date }) {
       </div>
 
       <ErrorAlert error={reservationsError} />
+      <ErrorAlert error={tablesError} />
       {/*JSON.stringify(reservations)*/}
       <button
         type="button"
