@@ -32,6 +32,8 @@ export default function CreateReservation() {
     const reservationDate = new Date(formData.reservation_date);
     const reservationTime = formData.reservation_time;
 
+
+// Timezone was off so 1 equals tuesday in my code
     if (reservationDate.getDay() === 1) {
       errors.push({ message: "We are closed on Tuesdays" });
     }
