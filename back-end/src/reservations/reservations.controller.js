@@ -3,97 +3,63 @@
  */
 const service = require("./reservations.service");
 
+//////////////////////////////////////////////////
+/////          MIDDLEWARE PIPELINE          /////
+////////////////////////////////////////////////
+
+// checking is a reservation exists and placing it in the res.locals object
 async function reservationExists(req,res,next) {
   const { reservation_Id } = req.params;
-  const data = await service.read(reservation_Id);
+  const reservation = await service.read(reservation_Id);
 
-  if(data === undefined) {
+  if(reservation === undefined) {
     return next({
       status: 404,
-      message: `reservation ${reservation_Id} does not exist` 
+      message: `reservation with an id of ${reservation_Id} does not exist` 
     });
   }
-
-  res.json({ data });
+  res.locals.reservation = reservation;
+  next()
 }
 
+// validating the fields on an incoming request to create a reservation
 function hasValidProperties(req, res, next) {
   const { data = {} } = req.body;
-
-  if (data.first_name === undefined) {
+  // setting the incoming reservation's status to booked
+  if (data.status === undefined) {
+    data.status = "booked";
+  }
+  if (data.first_name === undefined || data.first_name === "") {
     return next({
       status: 400,
       message: "invalid first_name",
     });
   }
-  if (data.first_name === "") {
-    return next({
-      status: 400,
-      message: "invalid first_name",
-    });
-  }
-  if (data.last_name === undefined) {
+  if (data.last_name === undefined || data.last_name === "") {
     return next({
       status: 400,
       message: "invalid last_name",
     });
   }
-  if (data.last_name === "") {
-    return next({
-      status: 400,
-      message: "invalid last_name",
-    });
-  }
-  if (data.mobile_number === undefined) {
+  if (data.mobile_number === undefined || data.mobile_number === "") {
     return next({
       status: 400,
       message: "invalid mobile_number",
     });
   }
-  if (data.mobile_number === "") {
-    return next({
-      status: 400,
-      message: "invalid mobile_number",
-    });
-  }
-  if (data.reservation_date === undefined) {
+  if (data.reservation_date === undefined || data.reservation_date === "") {
     return next({
       status: 400,
       message: "invalid reservation_date",
     });
   }
-  if (data.reservation_date === "") {
-    return next({
-      status: 400,
-      message: "invalid reservation_date",
-    });
-  }
-
-  if (data.reservation_time === undefined) {
+  if (data.reservation_time === undefined || data.reservation_time === "") {
     return next({
       status: 400,
       message: "invalid reservation_time",
     });
   }
-  if (data.reservation_time === "") {
-    return next({
-      status: 400,
-      message: "invalid reservation_time",
-    });
-  }
-  if (data.people === undefined) {
-    return next({
-      status: 400,
-      message: "invalid number of people",
-    });
-  }
-  if (data.people === 0) {
-    return next({
-      status: 400,
-      message: "invalid number of people",
-    });
-  }
-  if (typeof(data.people) != "number") {
+  if (data.people === undefined || data.people === 0 || typeof(data.people) != "number") {
     return next({
       status: 400,
       message: "invalid number of people",
@@ -111,10 +77,18 @@ function hasValidProperties(req, res, next) {
       message: "invalid reservation_date",
     });
   }
-  res.locals.data = req.body.data;
+  if (data.status !== "booked") {
+    return next({
+      status: 400,
+      message: `invalid reservation status: ${data.status} reservations can only be made with the status of booked`,
+    });
+  }
+
+  res.locals.reservation = data;
   next();
 }
 
+// validating the date
 function dateIsValid(req,res,next) {
   const { reservation_date } = req.body.data;
   const reservation = new Date(reservation_date);
@@ -135,6 +109,7 @@ function dateIsValid(req,res,next) {
   next();
 }
 
+// validating reservation time
 function timeIsValid(req, res, next) {
   const { reservation_time } =  req.body.data;
   
@@ -157,17 +132,25 @@ function timeIsValid(req, res, next) {
   next();
 }
 
+/////////////////////////////////////////////////////////////////////////////
+/////                         CRUD OPERATIONS                         //////
+///////////////////////////////////////////////////////////////////////////
+
 async function list(req, res) {
   const date = req.query.date;
   const rawData = await service.list(date);
-  rawData.sort((a, b) => a.reservation_time.localeCompare(b.reservation_time));
+  // remove reservations with a status of finished
+  const data = rawData.filter((reservation)=>reservation.status !== "finished");
+  
+  data.sort((a, b) => a.reservation_time.localeCompare(b.reservation_time));
 
   res.json({
-    data: rawData,
+    data: data,
   });
 }
+
 async function create(req, res, next) {
-  const data = await service.create(res.locals.data);
+  const data = await service.create(res.locals.reservation);
   res.status(201).json({ data: data[0] });
 }
 
@@ -175,10 +158,35 @@ async function listAll(req,res,next) {
   const data = await service.listAll();
   res.json({data});
 }
+
+async function read(req,res,next) {
+  res.json({ data: res.locals.reservation });
+}
+
+async function updateReservationStatus(req,res,next) {
+  const { status } = req.body.data;
+  const reservation = res.locals.reservation;
+
+  if (reservation.status === "finished") {
+    return next({
+      status: 400,
+      message: "cannot update a finished reservation"
+    })
+  }
+  if (status === "finished" || status === "seated" || status === "booked") {
+    const data = await service.updateReservationStatus(reservation.reservation_id, status);
+    return res.json({data: data[0]});
+  }
+  return next({
+    status: 400,
+    message: `reservation status "${status}" is prohibited on this reservation`
+  })
+}
 module.exports = {
   list,
   create: [hasValidProperties, dateIsValid, timeIsValid, create],
-  read: reservationExists,
+  read: [reservationExists, read],
   listAll,
   reservationExists,
+  updateReservationStatus: [reservationExists, updateReservationStatus]
 };

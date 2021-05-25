@@ -17,23 +17,29 @@ import { listTables } from "../utils/apiCalls";
  * @returns {JSX.Element}
  */
 function Routes() {
+  const [reservations, setReservations] = useState([]);
+  const [reservationsError, setReservationsError] = useState(null);
   const [tables, setTables] = useState([]);
   const [tablesError, setTablesError] = useState(null);
   const [tableId, setTableId] = useState(null);
-  
-  useEffect(loadTables, [tableId])
+
+  useEffect(loadTables, [tableId]);
 
   function loadTables() {
     const abortController = new AbortController();
 
     listTables()
-    .then(setTables)
-    .catch(setTablesError);
+      .then(setTables)
+      .then(
+        console.log("calling loadTables from Routes component. Heres the updated list: ",
+        tables
+      ))
+      .catch(setTablesError);
     return () => abortController.abort();
   }
 
   const query = useQuery();
-	const date = query.get("date");
+  const date = query.get("date");
   return (
     <Switch>
       <Route exact={true} path="/">
@@ -43,20 +49,29 @@ function Routes() {
         <Redirect to={"/dashboard"} />
       </Route>
       <Route exact={true} path="/reservations/:reservationId/seat">
-        <SeatReservation 
-        tables={tables} 
-        loadTables={loadTables}
-        tableId={tableId}
-        setTableId={setTableId} />
+        <SeatReservation
+          tables={tables}
+          loadTables={loadTables}
+          tableId={tableId}
+          setTableId={setTableId}
+          reservations={reservations}
+          setReservations={setReservations}
+        />
       </Route>
       <Route exact={true} path="/reservations/new">
         <CreateReservation />
       </Route>
       <Route path="/dashboard">
-        <Dashboard date={date ? date : today()} />
+        <Dashboard
+          date={date ? date : today()}
+          reservations={reservations}
+          setReservations={setReservations}
+          reservationsError={reservationsError}
+          setReservationsError={setReservationsError}
+        />
       </Route>
       <Route path="/tables/new">
-      <CreateTable />
+        <CreateTable />
       </Route>
       <Route>
         <NotFound />

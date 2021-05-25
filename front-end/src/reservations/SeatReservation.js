@@ -1,80 +1,81 @@
 import { useParams, useHistory } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { listReservation, seatReservation } from "../utils/apiCalls";
-// THERE IS AN API CALL THAT WILL SEAT YOUR RESERVATION
+import {
+  listReservation,
+  seatReservation,
+  updateReservationStatus,
+  listTables
+} from "../utils/apiCalls";
+import ErrorAlert from "../layout/ErrorAlert";
 
-export default function SeatReservation({tables, loadTables, tableId, setTableId}) {
-  //const [tables, setTables] = useState([]);
-  //const [tablesError, setTablesError] = useState(null);
+export default function SeatReservation({
+  tables,
+  loadTables,
+  tableId,
+  setTableId,
+}) {
   const [table, setTable] = useState(null);
-  //const [tableId, setTableId] = useState(null);
+  const [tablesError, setTablesError] = useState(null);
   const [reservation, setReservation] = useState([]);
   const [reservationError, setReservationError] = useState(null);
+  const [submissionError, setSubmissionError] = useState(null);
+  const [availableTables, setAvailableTables] = useState([]);
+  
   const { reservationId } = useParams();
   const history = useHistory();
 
-  useEffect(loadData, [reservationId, tableId]);
-  useEffect(loadTable, [tableId, tables]);
+  // Load the reservation data once the page mounts,
+  //    this data will be used to validate seating capacity
+  useEffect(loadReservationData, []);
+  useEffect(()=> {
+    const abortController = new AbortController();
+    
+    setTablesError(null);
+    listTables(abortController.signal)
+    .then(setAvailableTables)
+    .catch(setTablesError);
 
-  function loadData() {
+    return ()=> abortController.abort;
+  }, [])
+
+  // Make an api call to database and set the reservation data to
+  //    match using the reservationId from the route parameters
+  //    (Remember this is running Asyncronously) 
+  function loadReservationData() {
     const abortController = new AbortController();
     setReservationError(null);
-    listReservation(reservationId).then(setReservation)
-    .catch(setReservationError);
+    listReservation(reservationId)
+      .then(setReservation)
+      .catch(setReservationError);
     return () => abortController.abort();
   }
 
-  // Don't need API call to set table, just filter through tables and find mathing table_id 
-  //  for the select option table id
-  function loadTable() {
-    const foundTable = tables.find((table)=>table.table_id === Number(tableId));
-    setTable(foundTable);
-  }
-
-  const seatingValidation = () => {
-    const errors = [];
-    if(!table || table.length === 0) {
-      return false;
-    }
-    if (table.reservation_id) {
-      errors.push({message: "Table already occupied"});
-    }
-    if(table.capacity < reservation.people) {
-      errors.push({message: "table not big enough"});
-    }
-    if (errors.length > 0) {
-      return false;
-    }
-    return true;
-  }
-
   const listTableOptions = () => {
-    return tables.map((table) => {
+    return availableTables.map((table) => {
       return (
-        <option key={table.table_id} value={table.table_id} capacity={table.capacity}>
+        <option
+          key={table.table_id}
+          value={table.table_id}
+          capacity={table.capacity}
+        >
           {table.table_name} - {table.capacity}
         </option>
       );
     });
   };
 
-  const handleChange = async ({target:{value}}) => {
-    setTableId((currentValue)=> currentValue = value);
-  }
+  const handleChange = async ({ target: { value } }) => {
+    await setTableId((currentValue) => (currentValue = value));
+  };
 
   const handleSubmit = (event) => {
     const abortController = new AbortController();
     event.preventDefault();
-
-    if(seatingValidation()) {
-    seatReservation(reservationId, tableId)
-    .then(loadTables())
-    .then(loadTables())
-    .then(loadTables())
-    .then(history.push(`/dashboard`))
-    .catch(console.log(""))
-    return () => abortController.abort();
-    }  
+    // If the validations are correct, then seat the reservation and change the
+    //    status so seated
+      seatReservation(reservationId, tableId)
+      .then(()=>history.push(`/dashboard`))
+      .catch(setSubmissionError)
   };
 
   return (
@@ -84,17 +85,21 @@ export default function SeatReservation({tables, loadTables, tableId, setTableId
         <label>
           Table Number:
           <select onChange={handleChange} name="table_id" required>
-            <option key={0} value={null}>--Select Table--</option>
+            <option key={0} value={null}>
+              --Select Table--
+            </option>
             {listTableOptions()}
           </select>
         </label>
         <button type="submit" name="submit">
           Submit
         </button>
-        <button type="button" onClick={()=>history.goBack()} name="cancel">
+        <button type="button" onClick={() => history.goBack()} name="cancel">
           Cancel
         </button>
       </form>
+      <ErrorAlert error={submissionError} />
+      <ErrorAlert error={submissionError} />
     </div>
   );
 }

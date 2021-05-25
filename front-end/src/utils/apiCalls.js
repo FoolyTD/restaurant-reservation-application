@@ -109,6 +109,16 @@ async function freeTable(table_id) {
   return await fetchJson(url, options);
 } 
 
+async function updateReservationStatus(reservation_id, status) {
+  const url = `${API_BASE_URL}/reservations/${reservation_id}/status`;
+  const options = {
+    method: "PUT",
+    body: JSON.stringify({ data: { status } }),
+    headers,
+  };
+  return await fetchJson(url, options, {});
+}
+
 module.exports = {
   createReservation,
   createTable,
@@ -117,4 +127,5 @@ module.exports = {
   listReservation,
   listTable,
   freeTable,
+  updateReservationStatus
 };
