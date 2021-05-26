@@ -40,7 +40,7 @@ export default function SeatReservation({
 
   // Make an api call to database and set the reservation data to
   //    match using the reservationId from the route parameters
-  //    (Remember this is running Asyncronously) 
+  //    (Remember this is running asyncronously) 
   function loadReservationData() {
     const abortController = new AbortController();
     setReservationError(null);
