@@ -7,7 +7,7 @@ const service = require("./reservations.service");
 /////          MIDDLEWARE PIPELINE          /////
 ////////////////////////////////////////////////
 
-// checking is a reservation exists and placing it in the res.locals object
+// checking if a reservation exists and placing it in the res.locals object //
 async function reservationExists(req,res,next) {
   const { reservation_Id } = req.params;
   const reservation = await service.read(reservation_Id);
@@ -22,10 +22,10 @@ async function reservationExists(req,res,next) {
   next()
 }
 
-// validating the fields on an incoming request to create a reservation
+// validating the fields on an incoming request to create a reservation //
 function hasValidProperties(req, res, next) {
   const { data = {} } = req.body;
-  // setting the incoming reservation's status to booked
+  // setting all incoming reservations' status to booked
   if (data.status === undefined) {
     data.status = "booked";
   }
@@ -88,7 +88,7 @@ function hasValidProperties(req, res, next) {
   next();
 }
 
-// validating the date
+// validating the date is not in the past or on a Tuesday //
 function dateIsValid(req,res,next) {
   const { reservation_date } = req.body.data;
   const reservation = new Date(reservation_date);
@@ -109,7 +109,7 @@ function dateIsValid(req,res,next) {
   next();
 }
 
-// validating reservation time
+// validating reservation time is within store operating hours //
 function timeIsValid(req, res, next) {
   const { reservation_time } =  req.body.data;
   
@@ -136,33 +136,46 @@ function timeIsValid(req, res, next) {
 /////                         CRUD OPERATIONS                         //////
 ///////////////////////////////////////////////////////////////////////////
 
+// List reservations on a given date //
 async function list(req, res) {
   const date = req.query.date;
+  const mobile_number = req.query.mobile_number;
+
+  // if there is a date in the query string, search by date
+  if (date) {
   const rawData = await service.list(date);
   // remove reservations with a status of finished
   const data = rawData.filter((reservation)=>reservation.status !== "finished");
-  
   data.sort((a, b) => a.reservation_time.localeCompare(b.reservation_time));
-
-  res.json({
-    data: data,
-  });
+  return res.json({data});  
+  }
+  
+  // if there is a mobile_number, search by mobile number
+  if(mobile_number) {
+  const data = await service.search(mobile_number);
+  return res.json({data})
+  }
+  
 }
 
+// Create a new reservation //
 async function create(req, res, next) {
   const data = await service.create(res.locals.reservation);
   res.status(201).json({ data: data[0] });
 }
 
+// List all reservation in the reservations table //
 async function listAll(req,res,next) {
   const data = await service.listAll();
   res.json({data});
 }
 
+// Get a single reservation by it's reservation_id //
 async function read(req,res,next) {
   res.json({ data: res.locals.reservation });
 }
 
+// Update the status field on an existing reservation //
 async function updateReservationStatus(req,res,next) {
   const { status } = req.body.data;
   const reservation = res.locals.reservation;
@@ -182,11 +195,21 @@ async function updateReservationStatus(req,res,next) {
     message: `reservation status "${status}" is prohibited on this reservation`
   })
 }
+
+// Get reservations by mobile_number
+async function search(req, res, next) {
+
+  const data = service.search(mobile_number);
+
+  return res.json({data})
+}
+
 module.exports = {
   list,
   create: [hasValidProperties, dateIsValid, timeIsValid, create],
   read: [reservationExists, read],
   listAll,
   reservationExists,
-  updateReservationStatus: [reservationExists, updateReservationStatus]
+  updateReservationStatus: [reservationExists, updateReservationStatus],
+  search
 };
