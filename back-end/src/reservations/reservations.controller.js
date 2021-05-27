@@ -186,6 +186,11 @@ async function updateReservationStatus(req,res,next) {
       message: "cannot update a finished reservation"
     })
   }
+  // return a 200 if reservation is cancelled
+  if (status === "cancelled") {
+    const data = await service.updateReservationStatus(reservation.reservation_id, status);
+    return res.status(200).json({data: data[0]});
+  }
   if (status === "finished" || status === "seated" || status === "booked") {
     const data = await service.updateReservationStatus(reservation.reservation_id, status);
     return res.json({data: data[0]});
@@ -196,12 +201,15 @@ async function updateReservationStatus(req,res,next) {
   })
 }
 
-// Get reservations by mobile_number
-async function search(req, res, next) {
-
-  const data = service.search(mobile_number);
-
-  return res.json({data})
+// Update multiple fields on an existing reservation
+async function updateReservation(req, res, next) {
+  const updatedReservation = {
+    ...req.body.data,
+    reservation_id: Number(req.params.reservation_Id)
+  }
+  console.log(updatedReservation);
+  const data = await service.updateReservation(updatedReservation);
+  res.json({ data });
 }
 
 module.exports = {
@@ -211,5 +219,5 @@ module.exports = {
   listAll,
   reservationExists,
   updateReservationStatus: [reservationExists, updateReservationStatus],
-  search
+  updateReservation: [reservationExists, hasValidProperties, dateIsValid, timeIsValid, updateReservation]
 };

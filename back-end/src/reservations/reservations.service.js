@@ -43,7 +43,14 @@ function search(mobile_number) {
         `%${mobile_number.replace(/\D/g, "")}%`
       )
       .orderBy("reservation_date");
-  }
+}
+
+function updateReservation(updatedReservation) {
+    return knex("reservations")
+    .where({reservation_id: updatedReservation.reservation_id})
+    .update(updatedReservation, "*")
+    .then(()=>read(updatedReservation.reservation_id))
+}
 
 module.exports = {
     list,
@@ -52,4 +59,5 @@ module.exports = {
     listAll,
     updateReservationStatus,
     search,
+    updateReservation,
 }

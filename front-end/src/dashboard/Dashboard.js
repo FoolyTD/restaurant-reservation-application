@@ -43,7 +43,7 @@ function Dashboard({
 
   const showReservations = () => {
     return reservations.map((reservation) => {
-      if (reservation.status !== "finished") {
+      if (reservation.status !== "finished" && reservation.status !== "cancelled") {
         return (
           <div>
             <li key={reservation.reservation_id} className="">
@@ -60,6 +60,10 @@ function Dashboard({
                 <button type="button">Seat</button>
               </Link>
             )}
+            <Link to={`/reservations/${reservation.reservation_id}/edit`}>
+                <button type="button">Edit</button>
+            </Link>
+            <button data-reservation-id-cancel={reservation.reservation_id} onClick={()=>handleCancel(reservation.reservation_id)} type="button">Cancel</button>
           </div>
         );
       } else {
@@ -82,6 +86,18 @@ function Dashboard({
         .catch(setReservationsError);
     }
   };
+
+  // cancel button asks for confirmation before making api call to update reservation status to cancelled
+  const handleCancel = (reservation_id) => {
+    const confirmation = window.confirm("Do you want to cancel this reservation? This cannot be undone.")
+    if (confirmation) {
+      // updates reservation status to cancelled
+      updateReservationStatus(reservation_id, "cancelled")
+      // reload the dashboard
+      .then(loadDashboard)
+      .catch(setReservationsError)
+    }
+  }
 
   const showTables = () => {
     return tables.map((table) => {
