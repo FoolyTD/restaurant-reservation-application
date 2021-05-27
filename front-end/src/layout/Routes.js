@@ -9,6 +9,7 @@ import useQuery from "../utils/useQuery";
 import SeatReservation from "../reservations/SeatReservation";
 import { listTables } from "../utils/apiCalls";
 import Search from "../reservations/Search";
+import EditReservation from "../reservations/EditReservation";
 
 /**
  * Defines all the routes for the application.
@@ -58,6 +59,9 @@ function Routes() {
           reservations={reservations}
           setReservations={setReservations}
         />
+      </Route>
+      <Route exact={true} path="/reservations/:reservationId/edit">
+        <EditReservation />
       </Route>
       <Route exact={true} path="/reservations/new">
         <CreateReservation />
