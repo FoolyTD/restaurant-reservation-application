@@ -3,30 +3,25 @@ import { useState, useEffect } from "react";
 import {
   listReservation,
   seatReservation,
-  updateReservationStatus,
   listTables
 } from "../utils/apiCalls";
 import ErrorAlert from "../layout/ErrorAlert";
 
 export default function SeatReservation({
-  tables,
-  loadTables,
   tableId,
   setTableId,
 }) {
-  const [table, setTable] = useState(null);
   const [tablesError, setTablesError] = useState(null);
   const [reservation, setReservation] = useState([]);
   const [reservationError, setReservationError] = useState(null);
   const [submissionError, setSubmissionError] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
-  
   const { reservationId } = useParams();
   const history = useHistory();
 
   // Load the reservation data once the page mounts,
   //    this data will be used to validate seating capacity
-  useEffect(loadReservationData, []);
+  useEffect(loadReservationData, [reservationId]);
   useEffect(()=> {
     const abortController = new AbortController();
     
@@ -50,6 +45,7 @@ export default function SeatReservation({
     return () => abortController.abort();
   }
 
+  // use available tables to display options
   const listTableOptions = () => {
     return availableTables.map((table) => {
       return (
@@ -58,18 +54,19 @@ export default function SeatReservation({
           value={table.table_id}
           capacity={table.capacity}
         >
-          {table.table_name} - {table.capacity}
+          {table.table_name} | Capacity: {table.capacity}
         </option>
       );
     });
   };
 
+  // update table id to current selected table
   const handleChange = async ({ target: { value } }) => {
     await setTableId((currentValue) => (currentValue = value));
   };
 
+  // make a put request to endpoint /tables/:table_id/seat, when tables are seated
   const handleSubmit = (event) => {
-    const abortController = new AbortController();
     event.preventDefault();
     // If the validations are correct, then seat the reservation and change the
     //    status so seated
@@ -80,26 +77,45 @@ export default function SeatReservation({
 
   return (
     <div>
-      <h1>Seat Reservation {reservationId}</h1>
+
+      <div className="mb-3">
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <h2>Seat Reservation {reservationId} - People: {reservation.people}</h2>
+            </li>
+          </ol>
+        </nav>
+      </div>
+
       <form onSubmit={handleSubmit}>
-        <label>
-          Table Number:
-          <select onChange={handleChange} name="table_id" required>
+
+        <div className="my-3">
+        <label className="">
+          Table: {} 
+          <select className="form-select form-select-lg mb-3" onChange={handleChange} name="table_id" required>
             <option key={0} value={null}>
               --Select Table--
             </option>
             {listTableOptions()}
           </select>
         </label>
-        <button type="submit" name="submit">
+        </div>
+        
+        {/* Buttons for submit & cancel */}
+
+        <div className="btn-group">
+        <button className="btn btn-primary" type="submit" name="submit">
           Submit
         </button>
-        <button type="button" onClick={() => history.goBack()} name="cancel">
+        <button className="btn btn-warning" type="button" onClick={() => history.goBack()} name="cancel">
           Cancel
         </button>
+        </div>
       </form>
       <ErrorAlert error={submissionError} />
-      <ErrorAlert error={submissionError} />
+      <ErrorAlert error={tablesError} />
+      <ErrorAlert error={reservationError} />
     </div>
   );
 }
