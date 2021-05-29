@@ -22,7 +22,6 @@ function Routes() {
   const [reservations, setReservations] = useState([]);
   const [reservationsError, setReservationsError] = useState(null);
   const [tables, setTables] = useState([]);
-  const [tablesError, setTablesError] = useState(null);
   const [tableId, setTableId] = useState(null);
 
   useEffect(loadTables, [tableId]);
@@ -32,11 +31,7 @@ function Routes() {
 
     listTables()
       .then(setTables)
-      .then(
-        console.log("calling loadTables from Routes component. Heres the updated list: ",
-        tables
-      ))
-      .catch(setTablesError);
+      .catch(()=>{});
     return () => abortController.abort();
   }
 

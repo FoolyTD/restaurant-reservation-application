@@ -12,14 +12,16 @@ export default function EditReservation() {
   const { reservationId } = useParams();
   const history = useHistory();
   const [formData, setFormData] = useState({});
+
   // When the page mounts, get the reservation information to fill the form
   useEffect(() => {
     const abortController = new AbortController();
-    listReservation(reservationId)
+    listReservation(reservationId, abortController.signal)
       .then(setReservation)
       .then((reservation) => setFormData)
       .catch(setReservationError);
-  }, []);
+    return () => {};
+  }, [reservationId]);
 
   // Display any errors with form validation
   const displayErrors = () => {
@@ -31,6 +33,13 @@ export default function EditReservation() {
   // Display any errors with form validation
   const displayReservationErrors = () => {
     return reservationError.map((error, index) => {
+      return <ErrorAlert key={`error-${index}`} error={error} />;
+    });
+  };
+
+  // Display any errors with form validation
+  const displayUpdateErrors = () => {
+    return updateError.map((error, index) => {
       return <ErrorAlert key={`error-${index}`} error={error} />;
     });
   };
@@ -85,11 +94,12 @@ export default function EditReservation() {
     Object.entries(formData).forEach((update) => {
       reservation[update[0]] = update[1];
     });
+
     // Make sure that the reservation date and time will be accepted by the API
     // if they are not changed
     reservation.reservation_date = reservation.reservation_date.slice(0, 10);
     reservation.reservation_time = reservation.reservation_time.slice(0, 5);
-   
+
     if (formData.reservation_date) {
       if (dateValidation()) {
         //On submit we want to update the reservation
@@ -102,31 +112,46 @@ export default function EditReservation() {
       }
     } else {
       await updateReservation(reservationId, reservation)
-          .then(() =>
-            history.push(`/dashboard?date=${reservation.reservation_date}`)
-          )
-          .catch(setUpdateError);
+        .then(() =>
+          history.push(`/dashboard?date=${reservation.reservation_date}`)
+        )
+        .catch(setUpdateError);
     }
   };
 
   return (
     <div>
-      <h1>Editing Reservation: {reservationId}</h1>
+      <div className="mb-3">
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <h2>Editing Reservation: {reservationId}</h2>
+            </li>
+          </ol>
+        </nav>
+      </div>
+
+      {/* Update reservation form */}
       <form onSubmit={handleSubmit}>
-        <label>
-          First Name:
-          <input
-            className=""
-            type="text"
-            name="first_name"
-            placeholder={reservation.first_name}
-            value={formData.first_name && formData.first_name}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Last Name:
-          <input
+        <div className="mb-3">
+          <label className="form-label">
+            First Name:
+            <input
+              className="form-control"
+              type="text"
+              name="first_name"
+              placeholder={reservation.first_name}
+              value={formData.first_name && formData.first_name}
+              onChange={handleChange}
+            />
+          </label>
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label">
+            Last Name:
+            <input
+              className="form-control"
             type="text"
             name="last_name"
             placeholder={reservation.last_name}
@@ -134,9 +159,13 @@ export default function EditReservation() {
             onChange={handleChange}
           />
         </label>
-        <label>
-          Mobile Number:
-          <input
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label">
+            Mobile Number:
+            <input
+              className="form-control"
             type="tel"
             name="mobile_number"
             placeholder={reservation.mobile_number}
@@ -144,9 +173,13 @@ export default function EditReservation() {
             onChange={handleChange}
           />
         </label>
-        <label>
-          Date of Reservation:
-          <input
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label">
+            Date of Reservation:
+            <input
+              className="form-control"
             type="date"
             name="reservation_date"
             placeholder={reservation.reservation_date}
@@ -154,9 +187,13 @@ export default function EditReservation() {
             onChange={handleChange}
           />
         </label>
-        <label>
-          Time of Reservation:
-          <input
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label">
+            Time of Reservation:
+            <input
+              className="form-control"
             type="time"
             name="reservation_time"
             placeholder={reservation.reservation_time}
@@ -164,9 +201,13 @@ export default function EditReservation() {
             onChange={handleChange}
           />
         </label>
-        <label>
-          Party Size:
-          <input
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label">
+            Party Size:
+            <input
+              className="form-control"
             type="number"
             name="people"
             placeholder={reservation.people}
@@ -174,15 +215,28 @@ export default function EditReservation() {
             onChange={handleChange}
           />
         </label>
-        <button type="submit" name="submit">
-          Submit
-        </button>
-        <button type="button" onClick={() => history.goBack()} name="cancel">
-          Cancel
-        </button>
+        </div>
+
+        {/* Submit and cancel buttons */}
+        <div className="btn-group">
+          <button className="btn btn-primary" type="submit" name="submit">
+            Submit
+          </button>
+          <button
+            className="btn btn-warning"
+            type="button"
+            onClick={() => history.goBack()}
+            name="cancel"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
+
+      {/* Display errors */}
       {errors && displayErrors()}
       {reservationError && displayReservationErrors()}
+      {updateError && displayUpdateErrors()}
     </div>
   );
 }
